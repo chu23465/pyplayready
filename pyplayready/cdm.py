@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from io import StringIO
 import base64
 import math
 import time
 from typing import List, Union
 from uuid import UUID
 import xml.etree.ElementTree as ET
+import itertools as IT
+import xmltodict
 
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
@@ -224,7 +227,7 @@ class Cdm:
 
         return ecc_keys[0].key == session.encryption_key.public_bytes()
 
-    def parse_license(self, session_id: bytes, licence: str) -> None:
+    def parse_license(self, session_id: bytes, licencee: str) -> None:
         session = self.__sessions.get(session_id)
         if not session:
             raise InvalidSession(f"Session identifier {session_id!r} is invalid.")
@@ -233,11 +236,22 @@ class Cdm:
             raise InvalidSession("Cannot parse a license message without first making a license request")
 
         try:
-            root = ET.fromstring(licence)
+            print(licencee)
+            try:
+                parser = ET.XMLParser(encoding="utf-8")
+                root = ET.fromstring(licencee, parser=parser) #iterparse, XML, 
+            except ET.ParseError as err:
+                lineno, column = err.position
+                line = next(IT.islice(StringIO(licencee), lineno))
+                caret = '{:=>{}}'.format('^', column)
+                err.msg = '{}\n{}\n{}'.format(err, line, caret)
+                raise 
+
             license_elements = root.findall(".//{http://schemas.microsoft.com/DRM/2007/03/protocols}License")
 
             for license_element in license_elements:
-                parsed_licence = XMRLicense.loads(license_element.text)
+                print(license_element.text)
+                parsed_licence = XMRLicense.loads(license_element.text)        
 
                 if not self._verify_encryption_key(session, parsed_licence):
                     raise InvalidLicense("Public encryption key does not match")
