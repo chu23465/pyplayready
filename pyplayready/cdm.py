@@ -236,7 +236,6 @@ class Cdm:
             raise InvalidSession("Cannot parse a license message without first making a license request")
 
         try:
-            print(licencee)
             try:
                 parser = ET.XMLParser(encoding="utf-8")
                 root = ET.fromstring(licencee, parser=parser) #iterparse, XML, 
@@ -250,7 +249,6 @@ class Cdm:
             license_elements = root.findall(".//{http://schemas.microsoft.com/DRM/2007/03/protocols}License")
 
             for license_element in license_elements:
-                print(license_element.text)
                 parsed_licence = XMRLicense.loads(license_element.text)        
 
                 if not self._verify_encryption_key(session, parsed_licence):
